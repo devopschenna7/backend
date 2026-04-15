@@ -1,0 +1,42 @@
+name: Backend CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-scan-deploy:
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones disable SonarQube's ability to analyze commit history
+
+      - name: 🏗️ Setup Go Environment
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: 🧪 Run Unit Tests
+        run: go test ./... -v
+
+      - name: 🐳 Build Docker Image
+        run: docker build -t backend:latest .
+
+      - name: 🛡️ Trivy Image Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'backend:latest'
+          format: 'table'
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+      - name: 🚢 Load Image into Kind
+        run: kind load docker-image backend:latest --name kind
+
+      - name: ☸️ Deploy to Kubernetes
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout restart deployment backend-deployment

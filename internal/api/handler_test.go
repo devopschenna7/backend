@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"ecommerce-app/internal/store" // Adjust import path based on your module name
+	"backend/internal/store" // Adjust import path based on your module name
 )
 
 func setupTestHandler() (*Handler, *store.MemoryStore) {
